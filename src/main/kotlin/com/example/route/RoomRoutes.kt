@@ -3,6 +3,7 @@ package com.example.route
 import com.example.data.Room
 import com.example.data.models.BasicApiResponse
 import com.example.data.models.CreateRoomRequest
+import com.example.data.models.RoomResponse
 import com.example.other.Constants.MAX_ROOM_SIZE
 import com.example.server
 import io.ktor.application.*
@@ -54,6 +55,66 @@ fun Route.createRoomRoute(){
             println("Room created: ${roomRequest.name}")
 
             call.respond(HttpStatusCode.OK,BasicApiResponse(true))
+        }
+    }
+}
+
+fun Route.getRoomsRoute() {
+    route("/api/getRooms"){
+        get {
+            val searchQuery = call.parameters["searchQuery"]
+            if(searchQuery == null){
+                call.respond(HttpStatusCode.OK)
+                return@get
+            }
+
+            val roomsResult = server.rooms.filterKeys {
+                it.contains(searchQuery, ignoreCase = true)
+            }
+
+            val roomResponses = roomsResult.values.map {
+                RoomResponse(it.name,it.maxPlayer,it.players.size)
+            }.sortedBy { it.name }
+
+            call.respond(HttpStatusCode.OK,roomResponses)
+        }
+    }
+}
+
+fun Route.joinRoomRoute(){
+    route("/api/joinRoom"){
+        get {
+            val username = call.parameters["username"]
+            val roomName = call.parameters["roomName"]
+            if(username == null || roomName == null){
+                call.respond(HttpStatusCode.BadRequest)
+                return@get
+            }
+
+            val room = server.rooms[roomName]
+            when{
+                room == null -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(false,"Room not found.")
+                    )
+                }
+                room.containsPlayer(username) -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(false,"A player with this username already joined")
+                    )
+                }
+                room.players.size >= room.maxPlayer -> {
+                    call.respond(
+                        HttpStatusCode.OK,
+                        BasicApiResponse(false,"This room is already full.")
+                    )
+                }
+                else -> {
+                    call.respond(HttpStatusCode.OK,BasicApiResponse(true))
+                }
+            }
         }
     }
 }
