@@ -1,6 +1,7 @@
 package com.example.plugins
 
 import com.example.route.createRoomRoute
+import com.example.route.gameWebSocketRoute
 import com.example.route.getRoomsRoute
 import com.example.route.joinRoomRoute
 import io.ktor.routing.*
@@ -14,5 +15,6 @@ fun Application.configureRouting() {
         createRoomRoute()
         getRoomsRoute()
         joinRoomRoute()
+        gameWebSocketRoute()
     }
 }
